@@ -1,0 +1,4 @@
+# Los scripts deben ejecutarse en Linux/Git Bash: siempre con fin de linea LF
+*.sh text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
