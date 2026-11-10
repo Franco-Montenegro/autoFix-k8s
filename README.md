@@ -26,3 +26,49 @@ Los repos deben estar clonados como carpetas hermanas de `autoFix-k8s`. Requiere
 ./scripts/build-images.sh --push     # build + push a Docker Hub
 VERSION=1.0.1 ./scripts/build-images.sh --push
 ```
+
+## Despliegue en minikube
+
+Requiere minikube corriendo dentro de una VM. En este equipo se usa el driver Hyper-V
+(VirtualBox se congelaba al correr sobre Hyper-V, que Docker Desktop mantiene activo):
+
+```
+minikube start --driver=hyperv --hyperv-virtual-switch="Default Switch" --cpus=4 --memory=10240 --disk-size=40g
+./scripts/deploy.sh          # despliega todo por etapas y espera cada una
+./scripts/undeploy.sh        # elimina todo menos los datos; --all borra tambien los volumenes y el Secret
+```
+
+`deploy.sh` toma la IP con `minikube ip` y la inserta en los ConfigMaps del Gateway (CORS) y del frontend (`API_URL`).
+La contrasena de las BD se toma de `DB_PASSWORD` o de `.env` (ignorado por git); si no existe, se genera y se guarda ahi.
+
+Acceso desde el navegador del host (sin `port-forward`):
+
+- Frontend: `http://<minikube-ip>:30000`
+- API Gateway: `http://<minikube-ip>:30080/api`
+
+### Objetos
+
+| Componente | Objetos | Service |
+|---|---|---|
+| mysql-vehicles, mysql-repair-types, mysql-repair-orders | Deployment (Recreate), PVC 1 Gi, Secret `autofix-db` | ClusterIP 3306 |
+| config-server | Deployment, ConfigMap (URL del config-repo) | ClusterIP 8888 |
+| eureka-server | Deployment | ClusterIP 8761 |
+| ms-vehicles, ms-repair-types, ms-repair-orders, ms-reports | Deployment, ConfigMap (`SERVER_PORT` 8081-8084, `DB_HOST`) | ClusterIP 8081-8084 |
+| gateway | Deployment, ConfigMap (CORS) | **NodePort 30080** |
+| frontend | Deployment, ConfigMap (`API_URL`) | **NodePort 30000** |
+
+Los microservicios usan `server.port=${SERVER_PORT:0}`: puerto aleatorio en local y fijo en Kubernetes,
+para que cada Service ClusterIP tenga un `targetPort`. El Gateway y las llamadas entre microservicios
+siguen resolviendo por Eureka (`lb://...`), que registra la IP del pod con ese puerto.
+
+Cada servicio Spring tiene `startupProbe` (hasta 5 min), `livenessProbe` y `readinessProbe` sobre
+`/actuator/health/liveness` y `/readiness`, limite de 512 Mi y la JVM al 75 % de esa memoria.
+
+### Comandos utiles
+
+```
+kubectl get pods,svc -o wide
+kubectl logs deployment/ms-repair-orders
+kubectl describe pod <pod>
+kubectl rollout restart deployment/<nombre>   # recargar configuracion del config-repo
+```

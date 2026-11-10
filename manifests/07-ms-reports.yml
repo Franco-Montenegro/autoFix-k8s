@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-reports
+  labels:
+    app: ms-reports
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ms-reports
+  template:
+    metadata:
+      labels:
+        app: ms-reports
+    spec:
+      containers:
+        - name: ms-reports
+          image: francoone/autofix-ms-reports:1.0.0
+          ports:
+            - containerPort: 8084
+          envFrom:
+            - configMapRef: {name: autofix-common}
+            - configMapRef: {name: ms-reports}
+          # Java arranca lento en la VM: hasta 5 min (60 x 5 s) antes de evaluar liveness
+          startupProbe:
+            httpGet: {path: /actuator/health/liveness, port: 8084}
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet: {path: /actuator/health/liveness, port: 8084}
+            periodSeconds: 20
+            failureThreshold: 3
+          # El Service solo envia trafico al pod cuando esta listo
+          readinessProbe:
+            httpGet: {path: /actuator/health/readiness, port: 8084}
+            periodSeconds: 10
+          resources:
+            requests: {memory: 256Mi, cpu: 100m}
+            limits: {memory: 512Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ms-reports
+spec:
+  type: ClusterIP
+  selector:
+    app: ms-reports
+  ports:
+    - port: 8084
+      targetPort: 8084

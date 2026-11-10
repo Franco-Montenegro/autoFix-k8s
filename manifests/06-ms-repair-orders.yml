@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-repair-orders
+  labels:
+    app: ms-repair-orders
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ms-repair-orders
+  template:
+    metadata:
+      labels:
+        app: ms-repair-orders
+    spec:
+      containers:
+        - name: ms-repair-orders
+          image: francoone/autofix-ms-repair-orders:1.0.0
+          ports:
+            - containerPort: 8083
+          envFrom:
+            - configMapRef: {name: autofix-common}
+            - configMapRef: {name: ms-repair-orders}
+          env:
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: username}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: password}
+          # Java arranca lento en la VM: hasta 5 min (60 x 5 s) antes de evaluar liveness
+          startupProbe:
+            httpGet: {path: /actuator/health/liveness, port: 8083}
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet: {path: /actuator/health/liveness, port: 8083}
+            periodSeconds: 20
+            failureThreshold: 3
+          # El Service solo envia trafico al pod cuando esta listo
+          readinessProbe:
+            httpGet: {path: /actuator/health/readiness, port: 8083}
+            periodSeconds: 10
+          resources:
+            requests: {memory: 256Mi, cpu: 100m}
+            limits: {memory: 512Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ms-repair-orders
+spec:
+  type: ClusterIP
+  selector:
+    app: ms-repair-orders
+  ports:
+    - port: 8083
+      targetPort: 8083

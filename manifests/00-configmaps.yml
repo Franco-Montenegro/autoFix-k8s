@@ -1,0 +1,68 @@
+# Configuracion no sensible (las credenciales van en el Secret autofix-db, ver secret.example.yml).
+# __MINIKUBE_IP__ lo reemplaza scripts/deploy.sh por el resultado de 'minikube ip'.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: autofix-common
+data:
+  # Todos los servicios Spring leen su configuracion del Config Server y se registran en Eureka,
+  # usando el nombre DNS de cada Service dentro del cluster.
+  CONFIG_SERVER_URL: http://config-server:8888
+  EUREKA_URL: http://eureka-server:8761/eureka/
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-server
+data:
+  CONFIG_REPO_URI: https://github.com/Franco-Montenegro/autoFix-config-repo
+  CONFIG_REPO_BRANCH: main
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway
+data:
+  # Unico origen permitido por CORS: el frontend expuesto por NodePort
+  CORS_ALLOWED_ORIGINS: http://__MINIKUBE_IP__:30000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend
+data:
+  # El navegador llama a la API solo a traves del Gateway (NodePort 30080)
+  API_URL: http://__MINIKUBE_IP__:30080/api
+---
+# Microservicios: puerto fijo en Kubernetes (en local es aleatorio, server.port=${SERVER_PORT:0})
+# para que cada Service ClusterIP tenga un targetPort. Eureka registra la IP del pod con este puerto.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ms-vehicles
+data:
+  SERVER_PORT: "8081"
+  DB_HOST: mysql-vehicles
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ms-repair-types
+data:
+  SERVER_PORT: "8082"
+  DB_HOST: mysql-repair-types
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ms-repair-orders
+data:
+  SERVER_PORT: "8083"
+  DB_HOST: mysql-repair-orders
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ms-reports
+data:
+  SERVER_PORT: "8084"

@@ -1,0 +1,224 @@
+# ---------- mysql-vehicles (BD autofix_vehicles) ----------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-vehicles
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-vehicles
+  labels:
+    app: mysql-vehicles
+spec:
+  replicas: 1
+  # Recreate: el volumen es ReadWriteOnce, no puede haber dos pods de MySQL a la vez
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mysql-vehicles
+  template:
+    metadata:
+      labels:
+        app: mysql-vehicles
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              value: autofix_vehicles
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: username}
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: password}
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: root-password}
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 --silent"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests: {memory: 256Mi, cpu: 100m}
+            limits: {memory: 512Mi}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mysql-vehicles
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-vehicles
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql-vehicles
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+# ---------- mysql-repair-types (BD autofix_repair_types) ----------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-repair-types
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-repair-types
+  labels:
+    app: mysql-repair-types
+spec:
+  replicas: 1
+  # Recreate: el volumen es ReadWriteOnce, no puede haber dos pods de MySQL a la vez
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mysql-repair-types
+  template:
+    metadata:
+      labels:
+        app: mysql-repair-types
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              value: autofix_repair_types
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: username}
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: password}
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: root-password}
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 --silent"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests: {memory: 256Mi, cpu: 100m}
+            limits: {memory: 512Mi}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mysql-repair-types
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-repair-types
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql-repair-types
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+# ---------- mysql-repair-orders (BD autofix_repair_orders) ----------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-repair-orders
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-repair-orders
+  labels:
+    app: mysql-repair-orders
+spec:
+  replicas: 1
+  # Recreate: el volumen es ReadWriteOnce, no puede haber dos pods de MySQL a la vez
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mysql-repair-orders
+  template:
+    metadata:
+      labels:
+        app: mysql-repair-orders
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              value: autofix_repair_orders
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: username}
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: password}
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: autofix-db, key: root-password}
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 --silent"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests: {memory: 256Mi, cpu: 100m}
+            limits: {memory: 512Mi}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mysql-repair-orders
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-repair-orders
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql-repair-orders
+  ports:
+    - port: 3306
+      targetPort: 3306

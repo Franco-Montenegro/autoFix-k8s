@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eureka-server
+  labels:
+    app: eureka-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eureka-server
+  template:
+    metadata:
+      labels:
+        app: eureka-server
+    spec:
+      containers:
+        - name: eureka-server
+          image: francoone/autofix-eureka-server:1.0.0
+          ports:
+            - containerPort: 8761
+          envFrom:
+            - configMapRef: {name: autofix-common}
+          # Java arranca lento en la VM: hasta 5 min (60 x 5 s) antes de evaluar liveness
+          startupProbe:
+            httpGet: {path: /actuator/health/liveness, port: 8761}
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet: {path: /actuator/health/liveness, port: 8761}
+            periodSeconds: 20
+            failureThreshold: 3
+          # El Service solo envia trafico al pod cuando esta listo
+          readinessProbe:
+            httpGet: {path: /actuator/health/readiness, port: 8761}
+            periodSeconds: 10
+          resources:
+            requests: {memory: 256Mi, cpu: 100m}
+            limits: {memory: 512Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eureka-server
+spec:
+  type: ClusterIP
+  selector:
+    app: eureka-server
+  ports:
+    - port: 8761
+      targetPort: 8761
