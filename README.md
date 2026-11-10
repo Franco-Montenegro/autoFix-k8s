@@ -36,6 +36,7 @@ Requiere minikube corriendo dentro de una VM. En este equipo se usa el driver Hy
 minikube start --driver=hyperv --hyperv-virtual-switch="Default Switch" --cpus=4 --memory=10240 --disk-size=40g
 ./scripts/deploy.sh          # despliega todo por etapas y espera cada una
 ./scripts/undeploy.sh        # elimina todo menos los datos; --all borra tambien los volumenes y el Secret
+./scripts/seed-demo.sh       # carga datos de demostracion por el Gateway (solo si no hay vehiculos)
 ```
 
 `deploy.sh` toma la IP con `minikube ip` y la inserta en los ConfigMaps del Gateway (CORS) y del frontend (`API_URL`).
