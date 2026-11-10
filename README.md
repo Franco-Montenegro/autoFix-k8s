@@ -29,6 +29,8 @@ VERSION=1.0.1 ./scripts/build-images.sh --push
 
 ## Despliegue en minikube
 
+> **Paso a paso para levantar y apagar todo desde cero: [LEVANTAR.md](LEVANTAR.md).**
+
 Requiere minikube corriendo dentro de una VM. En este equipo se usa el driver Hyper-V
 (VirtualBox se congelaba al correr sobre Hyper-V, que Docker Desktop mantiene activo):
 
